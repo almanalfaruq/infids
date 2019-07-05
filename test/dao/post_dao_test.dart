@@ -1,7 +1,7 @@
-import 'package:infids/model/post.dart';
 import 'package:infids/dao/post_dao.dart';
-import 'package:test/test.dart';
+import 'package:infids/model/post.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:test/test.dart';
 
 @Skip('Tidak bisa dijalankan apabila aplikasi tidak berjalan pada perangkat')
 void main() {
@@ -13,7 +13,7 @@ void main() {
     setUp(() async {
       final path = (await getDatabasesPath()) + '/' + testDbPath;
       postDao = PostDao.forTest(path);
-      await postDao.setup();
+      await postDao.open();
     });
 
     tearDownAll(() async {

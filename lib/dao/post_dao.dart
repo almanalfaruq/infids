@@ -16,7 +16,7 @@ class PostDao {
 
   PostDao.forTest(String path) : this._path = path;
 
-  Future setup() async {
+  Future open() async {
     _database = await openDatabase(_path, version: 1,
         onCreate: (Database db, int version) async {
       db.execute("CREATE TABLE IF NOT EXISTS ${TABLE_NAME} "

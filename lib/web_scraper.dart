@@ -1,14 +1,14 @@
-import 'package:http/http.dart';
-import 'package:html/parser.dart';
 import 'package:html/dom.dart';
+import 'package:html/parser.dart';
+import 'package:http/http.dart';
 import 'package:infids/model/post.dart';
 
 class WebScraper {
   Client client = Client();
+  final String _homeUrl = 'http://sarjana.jteti.ugm.ac.id';
 
   Future<List<Post>> getPostsFromWebsite() async {
-    final response =
-        await client.get('http://sarjana.jteti.ugm.ac.id/akademik/');
+    final response = await client.get('$_homeUrl/akademik/');
     if (response.statusCode == 200) {
       List<Post> posts = [];
       Document document = parse(response.body);
@@ -62,15 +62,12 @@ class WebScraper {
       for (Element p in contents) {
         if (p.querySelector('a.btn') == null) {
           if (p.text.trim().isNotEmpty) content += p.text.trim() + '\n';
-        }
-        else
-          link = 'http://sarjana.jteti.ugm.ac.id' + p
+        } else
+          link = _homeUrl + p
               .querySelector('a.btn')
               .attributes['href'];
       }
     }
-    return { 'content': content, 'link': link };
+    return {'content': content, 'link': link};
   }
-
-
 }
