@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   ];
 
   List<Post> posts = [];
+  List<Post> categorizedPost = [];
 
   bool isPostLoaded = false;
 
@@ -40,7 +41,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:  AppBar(
+      appBar: AppBar(
         bottomOpacity: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,9 +75,16 @@ class _HomePageState extends State<HomePage> {
               ];
             },
             onSelected: (value) {
+              List<Post> tempPostCategorized = posts;
+              if (value != 0) {
+                tempPostCategorized = posts
+                    .where((post) =>
+                post.category == PostCategory.values[value - 1]).toList();
+              }
               setState(() {
                 popupMenuValue = value;
                 subTitle = subTitles[value];
+                categorizedPost = tempPostCategorized;
               });
             },
           ),
@@ -86,24 +94,27 @@ class _HomePageState extends State<HomePage> {
         children: <Widget>[
           Expanded(
             child: RefreshIndicator(
-                child: isPostLoaded ? ListView.builder(
+                child: isPostLoaded
+                    ? ListView.builder(
                   key: Key('post-list'),
-                  itemCount: posts.length,
+                  itemCount: categorizedPost.length,
                   itemBuilder: (context, index) {
                     return Card(
-                      key: Key(posts[index].id.toString()),
+                      key: Key(categorizedPost[index].id.toString()),
                       child: Column(
                         children: <Widget>[
-                          Text(posts[index].title),
-                          Text(posts[index].content),
+                          Text(categorizedPost[index].title),
+                          Text(categorizedPost[index].content),
                           Row(
-                            children: _getBottomRowCard(posts[index]),
+                            children:
+                            _getBottomRowCard(categorizedPost[index]),
                           )
                         ],
                       ),
                     );
                   },
-                ) : Center(
+                )
+                    : Center(
                   child: CircularProgressIndicator(
                     key: Key('refresh-indicator'),
                   ),
@@ -116,11 +127,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _onRefresh() async {
-    List<Post> postFromWebsite =
-        await this.widget._webScraper.getPostsFromWebsite();
-    if (postFromWebsite.length > 0 && this.mounted) {
+    posts = await this.widget._webScraper.getPostsFromWebsite();
+    if (posts.length > 0 && this.mounted) {
       setState(() {
-        posts = postFromWebsite;
+        categorizedPost = posts;
         isPostLoaded = true;
       });
     }
