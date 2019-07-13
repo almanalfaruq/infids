@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:infids/fonts/infids_icons.dart';
 import 'package:infids/model/post.dart';
-import 'package:infids/web_scraper.dart';
+import 'package:infids/provider/web_scraper.dart';
 
 class HomePage extends StatefulWidget {
-  WebScraper _webScraper = WebScraper();
+  final WebScraper _webScraper = WebScraper();
 
   HomePage();
 
-  HomePage.forTest(Client client) {
+  HomePage.forTest({Client client}) {
     _webScraper.client = client;
   }
 
@@ -41,75 +42,131 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        bottomOpacity: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('INFO DTETI'),
-            Text(subTitle),
-          ],
-        ),
-        actions: <Widget>[
-          PopupMenuButton<int>(
-            key: Key('button-filter'),
-            icon: Icon(Icons.filter_list),
-            initialValue: popupMenuValue,
-            itemBuilder: (builder) {
-              return [
-                PopupMenuItem<int>(
-                  key: Key('all-category'),
-                  child: Text('Semua Kategori'),
-                  value: 0,
-                ),
-                PopupMenuItem<int>(
-                  key: Key('academic-category'),
-                  child: Text('Kategori Akademik'),
-                  value: 1,
-                ),
-                PopupMenuItem<int>(
-                  key: Key('lecture-category'),
-                  child: Text('Kategori Perkuliahan'),
-                  value: 2,
+      body: SafeArea(
+          top: false,
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return <Widget>[
+                SliverAppBar(
+                  floating: true,
+                  snap: true,
+                  backgroundColor: Color.fromRGBO(1, 23, 46, 1),
+                  flexibleSpace: FlexibleSpaceBar(
+                    titlePadding: EdgeInsets.only(left: 20, top: 20),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          'INFO DTETI',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromRGBO(230, 200, 0, 1),
+                            fontSize: 30,
+                          ),
+                        ),
+                        Text(
+                          subTitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 15, top: 18),
+                      child: PopupMenuButton<int>(
+                        key: Key('button-filter'),
+                        icon: Icon(
+                          InfidsIcon.filter,
+                          color: Color.fromRGBO(230, 200, 0, 1),
+                        ),
+                        tooltip: 'Filter Kategori',
+                        initialValue: popupMenuValue,
+                        itemBuilder: (builder) {
+                          return [
+                            PopupMenuItem<int>(
+                              key: Key('all-category'),
+                              child: Text('Semua Kategori'),
+                              value: 0,
+                            ),
+                            PopupMenuItem<int>(
+                              key: Key('academic-category'),
+                              child: Text('Kategori Akademik'),
+                              value: 1,
+                            ),
+                            PopupMenuItem<int>(
+                              key: Key('lecture-category'),
+                              child: Text('Kategori Perkuliahan'),
+                              value: 2,
+                            ),
+                          ];
+                        },
+                        onSelected: (value) {
+                          List<Post> tempPostCategorized = posts;
+                          if (value != 0) {
+                            tempPostCategorized = posts
+                                .where((post) =>
+                            post.category ==
+                                PostCategory.values[value - 1])
+                                .toList();
+                          }
+                          setState(() {
+                            popupMenuValue = value;
+                            subTitle = subTitles[value];
+                            categorizedPost = tempPostCategorized;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                  bottom: PreferredSize(
+                    child: Container(),
+                    preferredSize: Size.fromHeight(20),
+                  ),
                 ),
               ];
             },
-            onSelected: (value) {
-              List<Post> tempPostCategorized = posts;
-              if (value != 0) {
-                tempPostCategorized = posts
-                    .where((post) =>
-                post.category == PostCategory.values[value - 1]).toList();
-              }
-              setState(() {
-                popupMenuValue = value;
-                subTitle = subTitles[value];
-                categorizedPost = tempPostCategorized;
-              });
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: RefreshIndicator(
+            body: RefreshIndicator(
                 child: isPostLoaded
                     ? ListView.builder(
                   key: Key('post-list'),
                   itemCount: categorizedPost.length,
                   itemBuilder: (context, index) {
                     return Card(
+                      margin: EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 20),
                       key: Key(categorizedPost[index].id.toString()),
-                      child: Column(
-                        children: <Widget>[
-                          Text(categorizedPost[index].title),
-                          Text(categorizedPost[index].content),
-                          Row(
-                            children:
-                            _getBottomRowCard(categorizedPost[index]),
-                          )
-                        ],
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.all(Radius.circular(15))),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 18),
+                        child: Column(
+                          children: <Widget>[
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                categorizedPost[index].title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 13),
+                              child: Text(categorizedPost[index].content),
+                            ),
+                            Row(
+                              children: _getBottomRowCard(
+                                  categorizedPost[index]),
+                            )
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -120,9 +177,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 onRefresh: _onRefresh),
-          ),
-        ],
-      ),
+          )),
     );
   }
 
@@ -138,20 +193,44 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _getBottomRowCard(Post post) {
     List<Widget> widgets = [];
-    widgets.add(Text(
-        post.category == PostCategory.AKADEMIK ? 'Akademik' : 'Perkuliahan'));
+    widgets.add(Expanded(
+      child: Row(
+        children: <Widget>[
+          Text(
+            post.category == PostCategory.AKADEMIK ? 'Akademik' : 'Perkuliahan',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: post.category == PostCategory.AKADEMIK
+                    ? Color.fromRGBO(0, 187, 232, 1)
+                    : Color.fromRGBO(230, 200, 0, 1)),
+          ),
+          Text(
+            ' - ${post.date}',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color.fromRGBO(128, 128, 128, 1)),
+          ),
+        ],
+      ),
+    ));
     if (post.link != null) {
       widgets.add(IconButton(
-        icon: Icon(Icons.file_download),
+        icon: Icon(InfidsIcon.download),
+        iconSize: 17,
+        tooltip: 'Download File',
         onPressed: () {},
       ));
     }
     widgets.add(IconButton(
-      icon: Icon(Icons.open_in_browser),
+      icon: Icon(InfidsIcon.publish),
+      iconSize: 17,
+      tooltip: 'Buka Dalam Browser',
       onPressed: () {},
     ));
     widgets.add(IconButton(
       icon: Icon(Icons.share),
+      iconSize: 17,
+      tooltip: 'Share Informasi',
       onPressed: () {},
     ));
     return widgets;

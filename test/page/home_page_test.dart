@@ -6,9 +6,8 @@ import 'package:http/testing.dart';
 import 'package:infids/model/post.dart';
 import 'package:infids/page/home_page.dart';
 
-
 void main() {
-  var homeHttpMock;
+  var homeMock;
 
   setUp(() {
     MockClient client = MockClient((request) async {
@@ -17,17 +16,17 @@ void main() {
       return Response(html, 200);
     });
 
-    homeHttpMock = MediaQuery(
+    homeMock = MediaQuery(
       data: MediaQueryData(),
       child: MaterialApp(
-        home: HomePage.forTest(client),
+        home: HomePage.forTest(client: client),
       ),
     );
   });
 
   group('Membuat Page Home', () {
     testWidgets('Mengecek Widget pada Page Home', (WidgetTester tester) async {
-      await tester.pumpWidget(homeHttpMock);
+      await tester.pumpWidget(homeMock);
       await tester.pump();
       final title = find.text('INFO DTETI');
       final subTitle = find.text('Menampilkan Semua Kategori');
@@ -42,7 +41,7 @@ void main() {
 
     testWidgets('Membuat Filter pada Button Filter',
             (WidgetTester tester) async {
-          await tester.pumpWidget(homeHttpMock);
+          await tester.pumpWidget(homeMock);
 
           final allCategory = find.text('Semua Kategori');
           final academicCategory = find.text('Kategori Akademik');
@@ -55,7 +54,7 @@ void main() {
 
     testWidgets('Mengganti tulisan subtitle berdasarkan filter',
             (WidgetTester tester) async {
-          await tester.pumpWidget(homeHttpMock);
+          await tester.pumpWidget(homeMock);
 
           final allCategory = find.byKey(Key('all-category'));
           final academicCategory = find.byKey(Key('academic-category'));
@@ -103,7 +102,7 @@ void main() {
         });
 
     testWidgets('Menampilkan card dalam listview', (WidgetTester tester) async {
-      await tester.pumpWidget(homeHttpMock);
+      await tester.pumpWidget(homeMock);
 
       final listView = find.byKey(Key('post-list'));
 
@@ -118,7 +117,7 @@ void main() {
 
     testWidgets('Menampilkan post dalam card dan list view',
         (WidgetTester tester) async {
-      await tester.pumpWidget(homeHttpMock);
+          await tester.pumpWidget(homeMock);
 
       final refreshIndicator = find.byKey(Key('refresh-indicator'));
       final listView = find.byKey(Key('post-list'));
@@ -186,7 +185,7 @@ void main() {
 
     testWidgets('Mengecek button action pada post',
         (WidgetTester tester) async {
-      await tester.pumpWidget(homeHttpMock);
+          await tester.pumpWidget(homeMock);
       await tester.pumpAndSettle();
       final post0 = Post(
           8605,
@@ -240,7 +239,7 @@ void main() {
     });
 
     testWidgets('Menampilkan kategori sesuai dengan pilihan', (WidgetTester tester) async {
-      await tester.pumpWidget(homeHttpMock);
+      await tester.pumpWidget(homeMock);
       await tester.pumpAndSettle();
 
       final post0 = Post(
