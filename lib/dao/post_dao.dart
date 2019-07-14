@@ -1,5 +1,7 @@
 import 'package:infids/model/post.dart';
+import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
 
 class PostDao {
   static const DATABASE_NAME = 'infids.db';
@@ -14,19 +16,25 @@ class PostDao {
   Database _database;
   String _path;
 
+  PostDao();
+
   PostDao.forTest(String path) : this._path = path;
 
   Future open() async {
+    if (_path == null) {
+      String dbPath = await getDatabasesPath();
+      _path = join(dbPath, 'infids.db');
+    }
     _database = await openDatabase(_path, version: 1,
         onCreate: (Database db, int version) async {
-      db.execute("CREATE TABLE IF NOT EXISTS ${TABLE_NAME} "
-          "(${COLUMN_ID} INTEGER PRIMARY KEY, "
-          "${COLUMN_DATE} TEXT, "
-          "${COLUMN_CATEGORY} INTEGER, "
-          "${COLUMN_TITLE} TEXT, "
-          "${COLUMN_CONTENT} TEXT, "
-          "${COLUMN_LINK} TEXT );");
-    });
+          db.execute("CREATE TABLE IF NOT EXISTS ${TABLE_NAME} "
+              "(${COLUMN_ID} INTEGER PRIMARY KEY, "
+              "${COLUMN_DATE} TEXT, "
+              "${COLUMN_CATEGORY} INTEGER, "
+              "${COLUMN_TITLE} TEXT, "
+              "${COLUMN_CONTENT} TEXT, "
+              "${COLUMN_LINK} TEXT );");
+        });
   }
 
   Future<List<Post>> getAllPost() async {
@@ -50,6 +58,13 @@ class PostDao {
   Future<Post> insert(Post post) async {
     await _database.insert(TABLE_NAME, post.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     return post;
+  }
+
+  Future<List<Post>> insertAll(List<Post> posts) async {
+    for (Post post in posts) {
+      await insert(post);
+    }
+    return posts;
   }
 
   Future close() async {

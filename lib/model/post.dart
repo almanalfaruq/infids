@@ -1,7 +1,4 @@
-enum PostCategory {
-  AKADEMIK,
-  PERKULIAHAN
-}
+enum PostCategory { AKADEMIK, PERKULIAHAN }
 
 class Post {
   int id;
@@ -24,8 +21,35 @@ class Post {
         "link: ${this.link}";
   }
 
+  String get categoryString =>
+      this.category == PostCategory.AKADEMIK ? 'Akademik' : 'Perkuliahan';
+
+  String get postFormattedString {
+    if (this.content.isNotEmpty && this.link != null) {
+      return "[Info ${this.categoryString}]" +
+          "\n${this.title}" +
+          "\n${this.date}" +
+          "\n\n${this.content}" +
+          "\nLink Download: ${this.link}";
+    } else if (this.content.isNotEmpty) {
+      return "[Info ${this.categoryString}]" +
+          "\n${this.title}" +
+          "\n${this.date}" +
+          "\n\n${this.content}";
+    } else if (this.link != null) {
+      return "[Info ${this.categoryString}]" +
+          "\n${this.title}" +
+          "\n${this.date}" +
+          "\n\nLink Download: ${this.link}";
+    } else {
+      return "[Info ${this.categoryString}]" +
+          "\n${this.title}" +
+          "\n${this.date}";
+    }
+  }
+
   @override
-  operator == (dynamic other) {
+  operator ==(dynamic other) {
     return other is Post &&
         other.id == this.id &&
         other.date == this.date &&
@@ -35,9 +59,12 @@ class Post {
         other.link == this.link;
   }
 
-  Post.fromMap(Map<String, dynamic> map, {String columnId = 'id',
-      String columnDate = 'date', String columnCategory = 'category',
-      String columnTitle = 'title', String columnContent = 'content',
+  Post.fromMap(Map<String, dynamic> map,
+      {String columnId = 'id',
+        String columnDate = 'date',
+        String columnCategory = 'category',
+        String columnTitle = 'title',
+        String columnContent = 'content',
       String columnLink = 'link'}) {
     this.id = map[columnId];
     this.date = map[columnDate];

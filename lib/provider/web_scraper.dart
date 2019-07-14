@@ -5,22 +5,28 @@ import 'package:infids/model/post.dart';
 
 class WebScraper {
   Client client = Client();
-  final String _homeUrl = 'http://sarjana.jteti.ugm.ac.id';
+  static final String HOME_URL = 'http://sarjana.jteti.ugm.ac.id';
+
+  static final String ACADEMIC_URL = '$HOME_URL/akademik/';
 
   Future<List<Post>> getPostsFromWebsite() async {
-    final response = await client.get('$_homeUrl/akademik/');
-    if (response.statusCode == 200) {
-      List<Post> posts = [];
-      Document document = parse(response.body);
-      List<Element> tableRows =
-          document.querySelectorAll('table.table-hover.table-pad > tbody > tr');
-      for (Element tableRow in tableRows) {
-        Post post = _createFormattedPost(tableRow);
-        posts.add(post);
+    try {
+      final response = await client.get(ACADEMIC_URL);
+      if (response.statusCode == 200) {
+        List<Post> posts = [];
+        Document document = parse(response.body);
+        List<Element> tableRows =
+        document.querySelectorAll('table.table-hover.table-pad > tbody > tr');
+        for (Element tableRow in tableRows) {
+          Post post = _createFormattedPost(tableRow);
+          posts.add(post);
+        }
+        return posts;
       }
-      return posts;
+      return [];
+    } catch (exception) {
+      return [];
     }
-    return [];
   }
 
   Post _createFormattedPost(Element tableRow) {
@@ -63,7 +69,7 @@ class WebScraper {
         if (p.querySelector('a.btn') == null) {
           if (p.text.trim().isNotEmpty) content += p.text.trim() + '\n';
         } else
-          link = _homeUrl + p
+          link = HOME_URL + p
               .querySelector('a.btn')
               .attributes['href'];
       }

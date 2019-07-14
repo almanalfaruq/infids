@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:infids/dao/post_dao.dart';
 import 'package:infids/fonts/infids_icons.dart';
 import 'package:infids/model/post.dart';
 import 'package:infids/provider/web_scraper.dart';
+import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   final WebScraper _webScraper = WebScraper();
@@ -18,6 +22,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+  GlobalKey<RefreshIndicatorState>();
+
+  PostDao _postDao = PostDao();
+  SharedPreferences _prefs;
+
   List<String> subTitles = [
     'Menampilkan Semua Kategori',
     'Menampilkan Kategori Akademik',
@@ -27,24 +37,39 @@ class _HomePageState extends State<HomePage> {
   List<Post> posts = [];
   List<Post> categorizedPost = [];
 
-  bool isPostLoaded = false;
-
   String subTitle;
   int popupMenuValue = 0;
+
+  BuildContext _context;
+
+  final SnackBar _snackBar = SnackBar(
+    content: Text('Gagal memperbarui data'),
+    action: SnackBarAction(
+      key: Key('button-retry'),
+      label: 'Coba lagi',
+      onPressed: () {
+        _refreshIndicatorKey.currentState?.show();
+      },
+    ),
+    duration: Duration(minutes: 5),
+  );
 
   @override
   void initState() {
     super.initState();
     subTitle = subTitles[0];
-    _onRefresh();
+    Future.delayed(Duration(milliseconds: 100), () {
+      _refreshIndicatorKey.currentState?.show();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-          top: false,
-          child: NestedScrollView(
+      body: Builder(
+        builder: (BuildContext context) {
+          _context = context;
+          return NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return <Widget>[
                 SliverAppBar(
@@ -130,65 +155,84 @@ class _HomePageState extends State<HomePage> {
               ];
             },
             body: RefreshIndicator(
-                child: isPostLoaded
-                    ? ListView.builder(
+                key: _refreshIndicatorKey,
+                child: ListView.builder(
                   key: Key('post-list'),
                   itemCount: categorizedPost.length,
                   itemBuilder: (context, index) {
-                    return Card(
-                      margin: EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 20),
-                      key: Key(categorizedPost[index].id.toString()),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                          BorderRadius.all(Radius.circular(15))),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 18),
-                        child: Column(
-                          children: <Widget>[
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                categorizedPost[index].title,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 13),
-                              child: Text(categorizedPost[index].content),
-                            ),
-                            Row(
-                              children: _getBottomRowCard(
-                                  categorizedPost[index]),
-                            )
-                          ],
-                        ),
-                      ),
-                    );
+                    return _buildCard(categorizedPost[index]);
                   },
-                )
-                    : Center(
-                  child: CircularProgressIndicator(
-                    key: Key('refresh-indicator'),
-                  ),
                 ),
                 onRefresh: _onRefresh),
-          )),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCard(Post post) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      key: Key(post.id.toString()),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(15))),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+        child: Column(
+          children: <Widget>[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                post.title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 13),
+              child: Text(post.content),
+            ),
+            Row(
+              children: _getBottomRowCard(post),
+            )
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _onRefresh() async {
+    _prefs = await SharedPreferences.getInstance();
+    _setPostsFromDatabase();
     posts = await this.widget._webScraper.getPostsFromWebsite();
     if (posts.length > 0 && this.mounted) {
+      await _prefs.setInt('id', posts[0].id);
+      _insertPostsToDatabase();
       setState(() {
         categorizedPost = posts;
-        isPostLoaded = true;
+      });
+    } else if (posts.length == 0) {
+      Scaffold.of(_context).showSnackBar(_snackBar);
+    }
+  }
+
+  void _setPostsFromDatabase() async {
+    await _postDao.open();
+    posts = await _postDao.getAllPost();
+    if (posts.length > 0) {
+      setState(() {
+        categorizedPost = posts;
       });
     }
+    await _postDao.close();
+  }
+
+  void _insertPostsToDatabase() async {
+    await _postDao.open();
+    await _postDao.insertAll(posts);
+    await _postDao.close();
   }
 
   List<Widget> _getBottomRowCard(Post post) {
@@ -218,20 +262,30 @@ class _HomePageState extends State<HomePage> {
         icon: Icon(InfidsIcon.download),
         iconSize: 17,
         tooltip: 'Download File',
-        onPressed: () {},
+        onPressed: () async {
+          if (await canLaunch('${post.link}')) {
+            launch('${post.link}');
+          }
+        },
       ));
     }
     widgets.add(IconButton(
       icon: Icon(InfidsIcon.publish),
       iconSize: 17,
       tooltip: 'Buka Dalam Browser',
-      onPressed: () {},
+      onPressed: () async {
+        if (await canLaunch('${WebScraper.ACADEMIC_URL}#${post.id}')) {
+          launch('${WebScraper.ACADEMIC_URL}#${post.id}');
+        }
+      },
     ));
     widgets.add(IconButton(
       icon: Icon(Icons.share),
       iconSize: 17,
       tooltip: 'Share Informasi',
-      onPressed: () {},
+      onPressed: () {
+        Share.share(post.postFormattedString);
+      },
     ));
     return widgets;
   }
