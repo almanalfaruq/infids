@@ -1,7 +1,15 @@
+import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
 import 'package:infids/page/home_page.dart';
+import 'package:infids/util/service.dart';
 
-void main() => runApp(Infids());
+void main() {
+  runApp(Infids());
+
+  Service service = Service.getInstance();
+
+  BackgroundFetch.registerHeadlessTask(service.checkUpdate);
+}
 
 class Infids extends StatelessWidget {
   @override

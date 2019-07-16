@@ -4,17 +4,17 @@ import 'package:infids/dao/post_dao.dart';
 import 'package:infids/fonts/infids_icons.dart';
 import 'package:infids/model/post.dart';
 import 'package:infids/provider/web_scraper.dart';
+import 'package:infids/util/service.dart';
 import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   final WebScraper _webScraper = WebScraper();
+  final bool isTest;
 
-  HomePage();
-
-  HomePage.forTest({Client client}) {
-    _webScraper.client = client;
+  HomePage({Client client, this.isTest = false}) {
+    if (isTest) _webScraper.client = client;
   }
 
   @override
@@ -39,20 +39,23 @@ class _HomePageState extends State<HomePage> {
 
   String subTitle;
   int popupMenuValue = 0;
+  Service _service = Service.getInstance();
 
   BuildContext _context;
 
-  final SnackBar _snackBar = SnackBar(
-    content: Text('Gagal memperbarui data'),
-    action: SnackBarAction(
-      key: Key('button-retry'),
-      label: 'Coba lagi',
-      onPressed: () {
-        _refreshIndicatorKey.currentState?.show();
-      },
-    ),
-    duration: Duration(minutes: 5),
-  );
+  Widget _getSnackBar() {
+    return SnackBar(
+      content: Text('Gagal memperbarui data'),
+      action: SnackBarAction(
+        key: Key('button-retry'),
+        label: 'Coba lagi',
+        onPressed: () {
+          if (!this.widget.isTest) _refreshIndicatorKey.currentState?.show();
+        },
+      ),
+      duration: Duration(minutes: 5),
+    );
+  }
 
   @override
   void initState() {
@@ -61,6 +64,7 @@ class _HomePageState extends State<HomePage> {
     Future.delayed(Duration(milliseconds: 100), () {
       _refreshIndicatorKey.currentState?.show();
     });
+    _service.initPlatformState(context);
   }
 
   @override
@@ -111,38 +115,10 @@ class _HomePageState extends State<HomePage> {
                         tooltip: 'Filter Kategori',
                         initialValue: popupMenuValue,
                         itemBuilder: (builder) {
-                          return [
-                            PopupMenuItem<int>(
-                              key: Key('all-category'),
-                              child: Text('Semua Kategori'),
-                              value: 0,
-                            ),
-                            PopupMenuItem<int>(
-                              key: Key('academic-category'),
-                              child: Text('Kategori Akademik'),
-                              value: 1,
-                            ),
-                            PopupMenuItem<int>(
-                              key: Key('lecture-category'),
-                              child: Text('Kategori Perkuliahan'),
-                              value: 2,
-                            ),
-                          ];
+                          return _createMenuItem();
                         },
                         onSelected: (value) {
-                          List<Post> tempPostCategorized = posts;
-                          if (value != 0) {
-                            tempPostCategorized = posts
-                                .where((post) =>
-                            post.category ==
-                                PostCategory.values[value - 1])
-                                .toList();
-                          }
-                          setState(() {
-                            popupMenuValue = value;
-                            subTitle = subTitles[value];
-                            categorizedPost = tempPostCategorized;
-                          });
+                          _onSelectMenuItem(value);
                         },
                       ),
                     ),
@@ -168,6 +144,26 @@ class _HomePageState extends State<HomePage> {
         },
       ),
     );
+  }
+
+  List<PopupMenuItem<int>> _createMenuItem() {
+    return [
+      PopupMenuItem<int>(
+        key: Key('all-category'),
+        child: Text('Semua Kategori'),
+        value: 0,
+      ),
+      PopupMenuItem<int>(
+        key: Key('academic-category'),
+        child: Text('Kategori Akademik'),
+        value: 1,
+      ),
+      PopupMenuItem<int>(
+        key: Key('lecture-category'),
+        child: Text('Kategori Perkuliahan'),
+        value: 2,
+      ),
+    ];
   }
 
   Widget _buildCard(Post post) {
@@ -204,17 +200,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _onRefresh() async {
-    _prefs = await SharedPreferences.getInstance();
-    _setPostsFromDatabase();
+    if (!this.widget.isTest) {
+      _prefs = await SharedPreferences.getInstance();
+      _setPostsFromDatabase();
+    }
     posts = await this.widget._webScraper.getPostsFromWebsite();
     if (posts.length > 0 && this.mounted) {
-      await _prefs.setInt('id', posts[0].id);
-      _insertPostsToDatabase();
+      if (!this.widget.isTest) {
+        await _prefs.setInt('id', posts[0].id);
+        _insertPostsToDatabase();
+      }
       setState(() {
         categorizedPost = posts;
       });
     } else if (posts.length == 0) {
-      Scaffold.of(_context).showSnackBar(_snackBar);
+      Widget snackbar = _getSnackBar();
+      Scaffold.of(_context).showSnackBar(snackbar);
     }
   }
 
@@ -263,8 +264,10 @@ class _HomePageState extends State<HomePage> {
         iconSize: 17,
         tooltip: 'Download File',
         onPressed: () async {
-          if (await canLaunch('${post.link}')) {
-            launch('${post.link}');
+          if (!this.widget.isTest) {
+            if (await canLaunch('${post.link}')) {
+              launch('${post.link}');
+            }
           }
         },
       ));
@@ -274,8 +277,10 @@ class _HomePageState extends State<HomePage> {
       iconSize: 17,
       tooltip: 'Buka Dalam Browser',
       onPressed: () async {
-        if (await canLaunch('${WebScraper.ACADEMIC_URL}#${post.id}')) {
-          launch('${WebScraper.ACADEMIC_URL}#${post.id}');
+        if (!this.widget.isTest) {
+          if (await canLaunch('${WebScraper.ACADEMIC_URL}#${post.id}')) {
+            launch('${WebScraper.ACADEMIC_URL}#${post.id}');
+          }
         }
       },
     ));
@@ -284,9 +289,25 @@ class _HomePageState extends State<HomePage> {
       iconSize: 17,
       tooltip: 'Share Informasi',
       onPressed: () {
-        Share.share(post.postFormattedString);
+        if (!this.widget.isTest) Share.share(post.postFormattedString);
       },
     ));
     return widgets;
+  }
+
+  void _onSelectMenuItem(int value) {
+    List<Post> tempPostCategorized = posts;
+    if (value != 0) {
+      tempPostCategorized = posts
+          .where((post) =>
+      post.category ==
+          PostCategory.values[value - 1])
+          .toList();
+    }
+    setState(() {
+      popupMenuValue = value;
+      subTitle = subTitles[value];
+      categorizedPost = tempPostCategorized;
+    });
   }
 }

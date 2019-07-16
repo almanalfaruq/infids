@@ -50,7 +50,7 @@ void main() {
     homeMock = MediaQuery(
       data: MediaQueryData(),
       child: MaterialApp(
-        home: HomePage.forTest(client: client),
+        home: HomePage(client: client, isTest: true,),
       ),
     );
   });
@@ -338,7 +338,7 @@ void main() {
       homeMockFailed = MediaQuery(
         data: MediaQueryData(),
         child: MaterialApp(
-          home: HomePage.forTest(client: client),
+          home: HomePage(client: client, isTest: true,),
         ),
       );
     });

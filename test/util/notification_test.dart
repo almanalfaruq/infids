@@ -10,7 +10,7 @@ void main() {
   MockMethodChannel mockChannel;
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
-  const id = 0;
+  const id = 2006;
   const title = 'Pengumuman';
   const body = 'Terdapat update dari web akademik';
   const payload = 'update';
