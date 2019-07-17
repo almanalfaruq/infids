@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart';
 import 'package:infids/dao/post_dao.dart';
 import 'package:infids/fonts/infids_icons.dart';
@@ -23,7 +24,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   static final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-  GlobalKey<RefreshIndicatorState>();
+      GlobalKey<RefreshIndicatorState>();
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   PostDao _postDao = PostDao();
   SharedPreferences _prefs;
@@ -61,10 +64,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     subTitle = subTitles[0];
-    Future.delayed(Duration(milliseconds: 100), () {
+    _service.initPlatformState();
+    _flutterLocalNotificationsPlugin.cancelAll();
+    Future.delayed(Duration(milliseconds: 10), () {
       _refreshIndicatorKey.currentState?.show();
     });
-    _service.initPlatformState(context);
   }
 
   @override
@@ -202,13 +206,13 @@ class _HomePageState extends State<HomePage> {
   Future<void> _onRefresh() async {
     if (!this.widget.isTest) {
       _prefs = await SharedPreferences.getInstance();
-      _setPostsFromDatabase();
+      await _setPostsFromDatabase();
     }
     posts = await this.widget._webScraper.getPostsFromWebsite();
     if (posts.length > 0 && this.mounted) {
       if (!this.widget.isTest) {
         await _prefs.setInt('id', posts[0].id);
-        _insertPostsToDatabase();
+        await _insertPostsToDatabase();
       }
       setState(() {
         categorizedPost = posts;
@@ -219,7 +223,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _setPostsFromDatabase() async {
+  Future<void> _setPostsFromDatabase() async {
     await _postDao.open();
     posts = await _postDao.getAllPost();
     if (posts.length > 0) {
@@ -230,7 +234,7 @@ class _HomePageState extends State<HomePage> {
     await _postDao.close();
   }
 
-  void _insertPostsToDatabase() async {
+  Future<void> _insertPostsToDatabase() async {
     await _postDao.open();
     await _postDao.insertAll(posts);
     await _postDao.close();
@@ -299,9 +303,7 @@ class _HomePageState extends State<HomePage> {
     List<Post> tempPostCategorized = posts;
     if (value != 0) {
       tempPostCategorized = posts
-          .where((post) =>
-      post.category ==
-          PostCategory.values[value - 1])
+          .where((post) => post.category == PostCategory.values[value - 1])
           .toList();
     }
     setState(() {

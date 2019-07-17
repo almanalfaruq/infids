@@ -10,6 +10,7 @@ class Service {
   WebScraper _webScraper = WebScraper();
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  final navigatorKey = GlobalKey<NavigatorState>();
 
   BuildContext context;
 
@@ -32,14 +33,13 @@ class Service {
         onSelectNotification: _onSelectNotification);
   }
 
-  Future<void> initPlatformState(BuildContext context) async {
-    this.context = context;
-    // Configure BackgroundFetch.
+  Future<void> initPlatformState() async {
     BackgroundFetch.configure(
         BackgroundFetchConfig(
             minimumFetchInterval: 15,
             stopOnTerminate: false,
-            enableHeadless: true), () async {
+            enableHeadless: true,
+            startOnBoot: true), () async {
       checkUpdate();
     }).then((int status) {
       print('[BackgroundFetch] SUCCESS: $status');
@@ -49,15 +49,19 @@ class Service {
   }
 
   void checkUpdate() async {
+    print('Start checking an update');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<Post> posts = await _webScraper.getPostsFromWebsite();
     int oldPostId = prefs.getInt('id');
     if (posts.length > 0 && oldPostId != null) {
       if (posts[0].id != oldPostId) {
+        print('There\'s a difference');
         prefs.setInt('id', posts[0].id);
+        print('Sending notification');
         _sendNotification();
       }
     }
+    print('Finish checking an update');
     BackgroundFetch.finish();
   }
 
@@ -73,11 +77,6 @@ class Service {
   }
 
   Future _onSelectNotification(String payload) async {
-    if (context != null) {
-      await Navigator.push(
-        context,
-        new MaterialPageRoute(builder: (context) => HomePage()),
-      );
-    }
+    await navigatorKey.currentState?.push(MaterialPageRoute(builder: (context) => HomePage()));
   }
 }
