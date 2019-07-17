@@ -1,9 +1,10 @@
-import 'package:infids/model/post.dart';
-import 'package:infids/web_scraper.dart';
-import 'package:test/test.dart';
+import 'dart:io';
+
 import 'package:http/http.dart';
 import 'package:http/testing.dart';
-import 'dart:io';
+import 'package:infids/model/post.dart';
+import 'package:infids/provider/web_scraper.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('Penanganan Respon', () {
