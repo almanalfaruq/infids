@@ -13,7 +13,7 @@
     <application
         tools:replace="android:label"
         android:name=".Application"
-        android:label="infids"
+        android:label="Infids"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
