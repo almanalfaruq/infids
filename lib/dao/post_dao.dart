@@ -38,7 +38,8 @@ class PostDao {
   }
 
   Future<List<Post>> getAllPost() async {
-    List<Map> maps = await _database.query(TABLE_NAME);
+    List<Map> maps = await _database.query(
+        TABLE_NAME, orderBy: "${COLUMN_ID} DESC");
     List<Post> posts = [];
     if (maps.length > 0) {
       for (Map map in maps) {

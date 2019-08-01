@@ -52,11 +52,11 @@ void main() {
 
       posts = await postDao.getAllPost();
       expect(posts.length, 6);
-      expect(posts[1] == post1, true);
-      expect(posts[2] == post2, true);
-      expect(posts[3] == post3, true);
-      expect(posts[4] == post4, true);
-      expect(posts[5] == post5, true);
+      expect(posts[0] == post5, true);
+      expect(posts[1] == post4, true);
+      expect(posts[2] == post3, true);
+      expect(posts[3] == post2, true);
+      expect(posts[4] == post1, true);
       await postDao.close();
     });
   });

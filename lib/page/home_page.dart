@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     subTitle = subTitles[0];
-    _service.initPlatformState();
+    if (!this.widget.isTest) _service.initPlatformState();
     _flutterLocalNotificationsPlugin.cancelAll();
     Future.delayed(Duration(milliseconds: 10), () {
       _refreshIndicatorKey.currentState?.show();
