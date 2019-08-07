@@ -184,6 +184,7 @@ class _HomePageState extends State<HomePage> {
               alignment: Alignment.centerLeft,
               child: Text(
                 post.title,
+                key: Key('${post.id}-title'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -192,7 +193,7 @@ class _HomePageState extends State<HomePage> {
             ),
             Padding(
               padding: const EdgeInsets.only(top: 13),
-              child: Text(post.content),
+              child: Text(post.content, key: Key('${post.id}-content'),),
             ),
             Row(
               children: _getBottomRowCard(post),
